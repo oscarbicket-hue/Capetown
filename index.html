@@ -296,6 +296,7 @@ var PLACES = [
     name:"Dunes Beach Restaurant & Bar", area:"Hout Bay",
     lat:-34.045568, lng:18.358365,
     wikiTitle:"Hout Bay",
+    commonsCategory:"Hout Bay beach",
     tags:["Seafood","Breakfast","Sundowners","Beachfront"],
     desc:"Great food and a stunning location right on Hout Bay beach. Come for breakfast and you'll probably still be there for sundowners — it's that kind of place. The mountains behind, the ocean in front, cold beers and fresh seafood. One of the most reliably good spots in Cape Town.",
     tip:"Great for breakfast as well as lunch and dinner. The beer-battered hake is a must. Sunday afternoons on the terrace are legendary — get there early.",
@@ -309,6 +310,7 @@ var PLACES = [
     name:"La Parada", area:"Constantia Nek",
     lat:-34.0125856, lng:18.4053874,
     wikiTitle:"Constantia, Cape Town",
+    commonsCategory:"Constantia Nek",
     tags:["Tapas","Spanish","Mountain Views"],
     desc:"Spanish-inspired tapas in a beautiful mountain setting. The perfect end-of-day spot after doing the wine tours in Constantia — sober up with tapas and enjoy the extraordinary valley views from the terrace.",
     tip:"Perfect stop after a day of wine tasting in Constantia — sober up with tapas and a great view. Order broadly and share everything.",
@@ -322,6 +324,7 @@ var PLACES = [
     name:"Constantia Glen", area:"Constantia Valley",
     lat:-34.0156509, lng:18.4090992,
     wikiTitle:"Constantia wine region",
+    commonsCategory:"Constantia Glen",
     tags:["Winery","Fine Dining","Luxury"],
     desc:"One of the most beautiful wine estates in the Constantia Valley. Modern, elegant architecture in perfect harmony with the landscape. Their FIVE Bordeaux blend is exceptional. This place is very special to me — I proposed to Danielle here.",
     tip:"The charcuterie board is excellent. This is where I proposed to Danielle — very special place. Book well in advance.",
@@ -335,6 +338,7 @@ var PLACES = [
     name:"Groot Constantia", area:"Constantia",
     lat:-34.029526, lng:18.4201952,
     wikiTitle:"Groot Constantia",
+    commonsCategory:"Groot Constantia",
     tags:["Historic Estate","Wine Tasting","Cape Dutch"],
     desc:"South Africa's oldest wine estate, dating to 1685. The Cape Dutch manor house and sweeping vineyards are among the most iconic sights in Cape Town. Wine tastings, cellar tours and two excellent restaurants all on site.",
     tip:"Do the cellar tour — it's really worth it. Try the Gouverneurs Reserve red and the Sauvignon Blanc.",
@@ -348,6 +352,7 @@ var PLACES = [
     name:"Kirstenbosch Botanical Garden", area:"Newlands",
     lat:-33.9875011, lng:18.432722,
     wikiTitle:"Kirstenbosch National Botanical Gardens",
+    commonsCategory:"Kirstenbosch National Botanical Gardens",
     tags:["Gardens","Hiking","Table Mountain"],
     desc:"One of the great botanical gardens of the world, set on the eastern slopes of Table Mountain. The Boomslang canopy walkway gives extraordinary views. You can also start a hike up Table Mountain directly from the gardens.",
     tip:"You can start a hike up Table Mountain directly from the gardens. Walk the Boomslang canopy bridge early. Check for Sunday Sunset Concerts — one of the best evenings in Cape Town.",
@@ -361,6 +366,7 @@ var PLACES = [
     name:"Cape to Cuba", area:"Kalk Bay",
     lat:-34.1272873, lng:18.448622,
     wikiTitle:"Kalk Bay, Cape Town",
+    commonsCategory:"Kalk Bay, Cape Town",
     tags:["Cuban","Cocktails","Harbour Views"],
     desc:"Kalk Bay is one of Cape Town's most characterful neighbourhoods, and Cape to Cuba is right at the heart of it. We got a cheap Airbnb nearby and stayed the night — absolutely worth it. Great shopping, brilliant vibes.",
     tip:"We stayed the night in Kalk Bay and it made the whole thing. Great Airbnbs nearby. Staying in Kalk Bay or Simon's Town for a night is really fun — great shopping and vibes.",
@@ -374,6 +380,7 @@ var PLACES = [
     name:"Boulders Beach — Penguins", area:"Simon's Town",
     lat:-34.1956153, lng:18.4503585,
     wikiTitle:"Boulders Beach",
+    commonsCategory:"Boulders Beach",
     tags:["Wildlife","Penguins","Beach"],
     desc:"One of those experiences that sounds touristy but absolutely delivers. A large colony of African penguins have completely taken over the beach and show zero concern for the watching humans. The boardwalks give brilliant close-up views, and you can swim alongside them too.",
     tip:"Go before 10am — the penguins are most active in the morning and the crowds haven't arrived yet. Combine with a coffee stop in Simon's Town.",
@@ -387,6 +394,7 @@ var PLACES = [
     name:"Furny's Fine Wines & Taste Room", area:"Noordhoek",
     lat:-34.0982492, lng:18.3634616,
     wikiTitle:"Noordhoek, Cape Town",
+    commonsCategory:"Noordhoek",
     tags:["Wine Tasting","Deli","Hidden Gem","Live Music"],
     desc:"A brilliant little find tucked away in Noordhoek near Chapman's Peak. Set in a charming courtyard, Furny's offers a carefully curated selection of South African wines with knowledgeable, passionate staff. Charcuterie boards are excellent. Live music on Sundays.",
     tip:"Go for a long walk on Noordhoek Beach afterwards — one of the most beautiful and unspoilt stretches of coastline in the Western Cape.",
@@ -400,6 +408,7 @@ var PLACES = [
     name:"Chapman's Peak Drive", area:"Hout Bay → Noordhoek",
     lat:-34.0883333, lng:18.3594444,
     wikiTitle:"Chapman's Peak",
+    commonsCategory:"Chapman's Peak Drive",
     tags:["Scenic Drive","Coastal Cliffs","Sunsets"],
     desc:"One of the world's truly great coastal drives. The road winds along sheer cliff faces between Hout Bay and Noordhoek, with the Atlantic dropping away beneath you and the mountain rising above. Every corner reveals another extraordinary view — about 9km of pure drama.",
     tip:"Drive it at sunset heading south towards Noordhoek for the best light. Check road status first — it occasionally closes due to rockfalls.",
@@ -413,6 +422,7 @@ var PLACES = [
     name:"Llandudno Beach", area:"Llandudno",
     lat:-34.0081097, lng:18.3412094,
     wikiTitle:"Llandudno, Cape Town",
+    commonsCategory:"Llandudno, Cape Town",
     tags:["Beach","Secluded","Sunsets","Swimming"],
     desc:"One of Cape Town's most beautiful and secluded beaches. Tucked between dramatic granite boulders and the Twelve Apostles mountain range, Llandudno is quiet, clean, and stunning. The Atlantic is cold but crystal clear, and the sunsets here are extraordinary.",
     tip:"A really nice secluded beach — safe, not too crowded, and genuinely beautiful. Go late afternoon and stay for the sunset.",
@@ -516,29 +526,60 @@ PLACES.forEach(function(p) {
   container.appendChild(el);
 });
 
-// Fetch accurate Wikipedia thumbnails for each place
-PLACES.forEach(function(p) {
-  if (!p.wikiTitle) return;
-  var apiUrl = 'https://en.wikipedia.org/w/api.php?action=query&titles='
-    + encodeURIComponent(p.wikiTitle)
-    + '&prop=pageimages&format=json&pithumbsize=600&origin=*';
-  fetch(apiUrl)
+// Load accurate photos from Wikimedia Commons category (curated, location-specific photos)
+var SKIP_PATTERN = /map|logo|icon|diagram|plan|coat|flag|seal|arms|symbol|locator|location|emblem/i;
+
+function pickPhotoFromPages(pages) {
+  if (!pages) return null;
+  var items = Object.values(pages).sort(function(a, b) { return (a.index||0) - (b.index||0); });
+  for (var i = 0; i < items.length; i++) {
+    var info = items[i].imageinfo && items[i].imageinfo[0];
+    if (!info || !info.thumburl) continue;
+    if (!/\.(jpg|jpeg|png|webp)/i.test(info.thumburl)) continue;
+    var title = (items[i].title || '').toLowerCase();
+    if (SKIP_PATTERN.test(title)) continue;
+    return info.thumburl;
+  }
+  return null;
+}
+
+function setCardPhoto(id, url) {
+  var imgEl = document.querySelector('.card[data-id="' + id + '"] .cphoto img');
+  if (!imgEl) return;
+  var newImg = new Image();
+  newImg.onload = function() { imgEl.src = newImg.src; imgEl.classList.add('loaded'); };
+  newImg.src = url;
+}
+
+function loadPhotoFromCommonsSearch(p) {
+  var q = p.commonsCategory || p.wikiTitle;
+  fetch('https://commons.wikimedia.org/w/api.php?action=query'
+    + '&generator=search&gsrnamespace=6'
+    + '&gsrsearch=' + encodeURIComponent(q)
+    + '&prop=imageinfo&iiprop=url&iiurlwidth=600'
+    + '&format=json&origin=*&gsrlimit=8')
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      var pages = data.query && data.query.pages;
-      if (!pages) return;
-      var page = Object.values(pages)[0];
-      if (!page || !page.thumbnail) return;
-      var imgEl = document.querySelector('.card[data-id="' + p.id + '"] .cphoto img');
-      if (!imgEl) return;
-      var newImg = new Image();
-      newImg.onload = function() {
-        imgEl.src = newImg.src;
-        imgEl.classList.add('loaded');
-      };
-      newImg.src = page.thumbnail.source;
+      var url = pickPhotoFromPages(data.query && data.query.pages);
+      if (url) setCardPhoto(p.id, url);
     })
     .catch(function() {});
+}
+
+PLACES.forEach(function(p) {
+  if (!p.commonsCategory) { loadPhotoFromCommonsSearch(p); return; }
+  fetch('https://commons.wikimedia.org/w/api.php?action=query'
+    + '&generator=categorymembers'
+    + '&gcmtitle=Category:' + encodeURIComponent(p.commonsCategory)
+    + '&gcmtype=file&prop=imageinfo&iiprop=url&iiurlwidth=600'
+    + '&format=json&origin=*&gcmlimit=10')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var url = pickPhotoFromPages(data.query && data.query.pages);
+      if (url) { setCardPhoto(p.id, url); return; }
+      loadPhotoFromCommonsSearch(p); // fallback if category empty
+    })
+    .catch(function() { loadPhotoFromCommonsSearch(p); });
 });
 
 var isMobile = function() { return window.innerWidth < 740; };
