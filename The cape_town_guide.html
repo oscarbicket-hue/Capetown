@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oscar's Cape Town</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --teal:    #1A7A6E;
+  --teal-dk: #0F5249;
+  --teal-lt: #E6F4F1;
+  --gold:    #B8822E;
+  --gold-lt: #FDF4E7;
+  --dark:    #1A1A1A;
+  --mid:     #666;
+  --border:  #E8E2D8;
+  --bg:      #F8F5F0;
+}
+html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--dark); }
+
+header {
+  background: var(--teal-dk); height: 54px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 18px; position: sticky; top: 0; z-index: 1000;
+  box-shadow: 0 2px 16px rgba(0,0,0,.3);
+}
+header h1 { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: #fff; }
+header h1 em { color: #E8B96A; font-style: normal; }
+.hbadge { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); color: rgba(255,255,255,.85); font-size: .7rem; padding: 4px 11px; border-radius: 20px; }
+
+#shell { display: flex; flex-direction: column; height: calc(100vh - 54px); }
+#map-panel { flex-shrink: 0; height: 48vw; min-height: 210px; max-height: 320px; position: relative; z-index: 1; }
+#map { width: 100%; height: 100%; }
+#list-panel { flex: 1; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--teal-lt) transparent; }
+#list-panel::-webkit-scrollbar { width: 4px; }
+#list-panel::-webkit-scrollbar-thumb { background: var(--teal-lt); }
+
+@media (min-width: 740px) {
+  #shell { flex-direction: row; }
+  #map-panel { flex: 1; height: auto; max-height: none; order: 2; }
+  #list-panel { width: 370px; flex-shrink: 0; border-right: 1px solid var(--border); order: 1; }
+}
+
+.sec-label {
+  padding: 12px 14px 9px; border-bottom: 1px solid var(--border);
+  font-size: .63rem; font-weight: 500; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--mid);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.sec-hint { font-size: .61rem; color: #bbb; letter-spacing: 0; text-transform: none; font-weight: 400; }
+.places { padding: 9px 10px 40px; }
+
+.card {
+  background: #fff; border: 1.5px solid var(--border); border-radius: 13px;
+  margin-bottom: 9px; overflow: hidden; cursor: pointer;
+  transition: border-color .18s, box-shadow .18s;
+  opacity: 0; animation: up .32s forwards;
+}
+@keyframes up { to { opacity:1; } }
+.card:nth-child(1){animation-delay:.04s} .card:nth-child(2){animation-delay:.08s}
+.card:nth-child(3){animation-delay:.12s} .card:nth-child(4){animation-delay:.16s}
+.card:nth-child(5){animation-delay:.20s} .card:nth-child(6){animation-delay:.24s}
+.card:nth-child(7){animation-delay:.28s} .card:nth-child(8){animation-delay:.32s}
+.card:nth-child(9){animation-delay:.36s} .card:nth-child(10){animation-delay:.40s}
+
+.card.teal.active, .card.teal:hover { border-color: var(--teal); }
+.card.gold.active, .card.gold:hover { border-color: var(--gold); }
+.card.teal.active { box-shadow: 0 4px 18px rgba(26,122,110,.15); }
+.card.gold.active { box-shadow: 0 4px 18px rgba(184,130,46,.15); }
+
+.stripe { height: 3px; }
+.teal .stripe { background: var(--teal); }
+.gold .stripe { background: var(--gold); }
+
+.ched { display: flex; align-items: center; gap: 10px; padding: 11px 13px 7px; }
+.cnum {
+  width: 27px; height: 27px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: .77rem; color: #fff;
+}
+.teal .cnum { background: var(--teal); }
+.gold .cnum { background: var(--gold); }
+.cname { font-weight: 500; font-size: .86rem; line-height: 1.25; }
+.carea { font-size: .67rem; color: var(--mid); margin-top: 2px; }
+.cemoji { font-size: 1.2rem; flex-shrink: 0; }
+
+.cbody { padding: 0 13px 13px; }
+.ctags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.tag { font-size: .62rem; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+.teal .tag { background: var(--teal-lt); color: #0d3d36; }
+.gold .tag { background: var(--gold-lt); color: #6b4010; }
+
+.cdesc {
+  font-size: .75rem; color: #555; line-height: 1.62;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.card.active .cdesc { -webkit-line-clamp: unset; }
+
+.cextra { display: none; margin-top: 10px; }
+.card.active .cextra { display: block; }
+
+.ctip { padding: 9px 11px; border-radius: 8px; font-size: .74rem; line-height: 1.55; margin-bottom: 10px; }
+.teal .ctip { background: var(--teal-lt); }
+.gold .ctip { background: var(--gold-lt); }
+.ctip-lbl { font-weight: 600; font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 3px; }
+.teal .ctip-lbl { color: var(--teal); }
+.gold .ctip-lbl { color: var(--gold); }
+
+.cinfo { display: flex; flex-direction: column; gap: 5px; }
+.irow { display: flex; gap: 7px; align-items: flex-start; font-size: .71rem; color: var(--mid); line-height: 1.4; }
+.iico { flex-shrink: 0; }
+a.il { text-decoration: none; font-weight: 500; }
+.teal a.il { color: var(--teal); }
+.gold a.il { color: var(--gold); }
+a.il:hover { text-decoration: underline; }
+
+.cbtns { display: flex; gap: 7px; margin-top: 11px; }
+.btn {
+  flex: 1; padding: 8px; border-radius: 8px; border: none;
+  font-family: 'DM Sans', sans-serif; font-size: .71rem; font-weight: 500;
+  cursor: pointer; text-decoration: none;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  transition: opacity .14s;
+}
+.btn:hover { opacity: .83; }
+.btn-map { color: #fff; }
+.teal .btn-map { background: var(--teal); }
+.gold .btn-map { background: var(--gold); }
+.btn-web { background: #ede8df; color: var(--dark); }
+
+.leaflet-container { font-family: 'DM Sans', sans-serif; }
+.leaflet-control-attribution { font-size: 9px !important; }
+.leaflet-popup-content-wrapper {
+  border-radius: 10px !important; box-shadow: 0 6px 24px rgba(0,0,0,.18) !important;
+  padding: 0 !important; overflow: hidden; border: none !important;
+}
+.leaflet-popup-content { margin: 0 !important; width: 230px !important; }
+.leaflet-popup-tip-container { margin-top: -1px; }
+.pop-head { padding: 10px 12px; }
+.pop-name { font-weight: 600; font-size: .85rem; color: #fff; line-height: 1.2; }
+.pop-area { font-size: .7rem; color: rgba(255,255,255,.75); margin-top: 1px; }
+.pop-body { padding: 9px 12px; background: #fff; font-size: .73rem; color: #555; line-height: 1.5; }
+
+#gif-widget {
+  position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+  width: 76px; height: 76px; border-radius: 50%; overflow: hidden;
+  box-shadow: 0 4px 18px rgba(0,0,0,.28); border: 3px solid #fff;
+  cursor: pointer; transition: transform .2s, box-shadow .2s;
+  animation: bob 2.8s ease-in-out infinite;
+}
+#gif-widget:hover { transform: scale(1.14) !important; box-shadow: 0 7px 28px rgba(0,0,0,.38); animation: none; }
+#gif-widget img { width: 100%; height: 100%; object-fit: cover; display: block; }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Oscar's <em>Cape Town</em></h1>
+  <span class="hbadge">10 Favourite Spots</span>
+</header>
+
+<div id="shell">
+  <div id="list-panel">
+    <div class="sec-label">My Favourite Places <span class="sec-hint">Tap to explore</span></div>
+    <div class="places" id="places"></div>
+  </div>
+  <div id="map-panel">
+    <div id="map"></div>
+  </div>
+</div>
+
+<div id="gif-widget" title="Cape Town vibes 🌊">
+  <img src="https://media4.giphy.com/media/26FAMbSfNaxcAdj9DQ/giphy.gif" alt="Cape Town">
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+var PLACES = [
+  {
+    id:1, theme:"teal", emoji:"🌊",
+    name:"Dunes Beach Restaurant & Bar", area:"Hout Bay",
+    lat:-34.045568, lng:18.358365,
+    tags:["Seafood","Breakfast","Sundowners","Beachfront"],
+    desc:"Great food and a stunning location right on Hout Bay beach. Come for breakfast and you'll probably still be there for sundowners — it's that kind of place. The mountains behind, the ocean in front, cold beers and fresh seafood. One of the most reliably good spots in Cape Town.",
+    tip:"Great for breakfast as well as lunch and dinner. The beer-battered hake is a must. Sunday afternoons on the terrace are legendary — get there early.",
+    address:"1 Beach Crescent, Hout Bay", hours:"Daily 9:00 AM – 10:00 PM",
+    phone:"+27 21 790 1876", price:"££",
+    website:"https://www.dunesrestaurant.co.za", wLabel:"dunesrestaurant.co.za",
+    gmaps:"https://maps.google.com/?q=Dunes+Beach+Restaurant+Hout+Bay"
+  },
+  {
+    id:2, theme:"gold", emoji:"🥘",
+    name:"La Parada", area:"Constantia Nek",
+    lat:-34.0125856, lng:18.4053874,
+    tags:["Tapas","Spanish","Mountain Views"],
+    desc:"Spanish-inspired tapas in a beautiful mountain setting. The perfect end-of-day spot after doing the wine tours in Constantia — sober up with tapas and enjoy the extraordinary valley views from the terrace.",
+    tip:"Perfect stop after a day of wine tasting in Constantia — sober up with tapas and a great view. Order broadly and share everything.",
+    address:"1 Hout Bay Main Road, Constantia Nek", hours:"Check website for current hours",
+    phone:"+27 21 795 0620", price:"£££",
+    website:"https://www.laparada.co.za", wLabel:"laparada.co.za",
+    gmaps:"https://maps.google.com/?q=La+Parada+Constantia+Nek"
+  },
+  {
+    id:3, theme:"teal", emoji:"🍷",
+    name:"Constantia Glen", area:"Constantia Valley",
+    lat:-34.0156509, lng:18.4090992,
+    tags:["Winery","Fine Dining","Luxury"],
+    desc:"One of the most beautiful wine estates in the Constantia Valley. Modern, elegant architecture in perfect harmony with the landscape. Their FIVE Bordeaux blend is exceptional. This place is very special to me — I proposed to Danielle here.",
+    tip:"The charcuterie board is excellent. This is where I proposed to Danielle — very special place. Book well in advance.",
+    address:"Constantia Main Road, Constantia", hours:"Mon–Thu & Sun: 10:30 AM – 6 PM · Fri–Sat: 10:30 AM – 9 PM",
+    phone:"+27 21 795 5639", price:"££££",
+    website:"http://www.constantiaglen.com", wLabel:"constantiaglen.com",
+    gmaps:"https://maps.google.com/?q=Constantia+Glen+Winery"
+  },
+  {
+    id:4, theme:"gold", emoji:"🏛️",
+    name:"Groot Constantia", area:"Constantia",
+    lat:-34.029526, lng:18.4201952,
+    tags:["Historic Estate","Wine Tasting","Cape Dutch"],
+    desc:"South Africa's oldest wine estate, dating to 1685. The Cape Dutch manor house and sweeping vineyards are among the most iconic sights in Cape Town. Wine tastings, cellar tours and two excellent restaurants all on site.",
+    tip:"Do the cellar tour — it's really worth it. Try the Gouverneurs Reserve red and the Sauvignon Blanc.",
+    address:"Groot Constantia Road, Constantia", hours:"Daily 9:00 AM – 5:00 PM",
+    phone:"+27 21 794 5128", price:"££",
+    website:"https://www.grootconstantia.co.za", wLabel:"grootconstantia.co.za",
+    gmaps:"https://maps.google.com/?q=Groot+Constantia"
+  },
+  {
+    id:5, theme:"teal", emoji:"🌿",
+    name:"Kirstenbosch Botanical Garden", area:"Newlands",
+    lat:-33.9875011, lng:18.432722,
+    tags:["Gardens","Hiking","Table Mountain"],
+    desc:"One of the great botanical gardens of the world, set on the eastern slopes of Table Mountain. The Boomslang canopy walkway gives extraordinary views. You can also start a hike up Table Mountain directly from the gardens.",
+    tip:"You can start a hike up Table Mountain directly from the gardens. Walk the Boomslang canopy bridge early. Check for Sunday Sunset Concerts — one of the best evenings in Cape Town.",
+    address:"Rhodes Drive, Newlands", hours:"Daily 8:00 AM – 7:00 PM",
+    phone:"+27 21 799 8783", price:"Entry fee applies",
+    website:"https://www.sanbi.org/gardens/kirstenbosch/", wLabel:"sanbi.org/kirstenbosch",
+    gmaps:"https://maps.google.com/?q=Kirstenbosch+National+Botanical+Garden"
+  },
+  {
+    id:6, theme:"gold", emoji:"🍹",
+    name:"Cape to Cuba", area:"Kalk Bay",
+    lat:-34.1272873, lng:18.448622,
+    tags:["Cuban","Cocktails","Harbour Views"],
+    desc:"Kalk Bay is one of Cape Town's most characterful neighbourhoods, and Cape to Cuba is right at the heart of it. We got a cheap Airbnb nearby and stayed the night — absolutely worth it. Great shopping, brilliant vibes.",
+    tip:"We stayed the night in Kalk Bay and it made the whole thing. Great Airbnbs nearby. Staying in Kalk Bay or Simon's Town for a night is really fun — great shopping and vibes.",
+    address:"165 Main Road, Kalk Bay", hours:"Mon–Thu & Sun: 11 AM – 11 PM · Fri–Sat: 11 AM – Midnight",
+    phone:"+27 21 788 1566", price:"££",
+    website:"https://capetocuba.com", wLabel:"capetocuba.com",
+    gmaps:"https://maps.google.com/?q=Cape+to+Cuba+Kalk+Bay"
+  },
+  {
+    id:7, theme:"teal", emoji:"🐧",
+    name:"Boulders Beach — Penguins", area:"Simon's Town",
+    lat:-34.1956153, lng:18.4503585,
+    tags:["Wildlife","Penguins","Beach"],
+    desc:"One of those experiences that sounds touristy but absolutely delivers. A large colony of African penguins have completely taken over the beach and show zero concern for the watching humans. The boardwalks give brilliant close-up views, and you can swim alongside them too.",
+    tip:"Go before 10am — the penguins are most active in the morning and the crowds haven't arrived yet. Combine with a coffee stop in Simon's Town.",
+    address:"Boulders Beach, Simon's Town", hours:"Daily 8:00 AM – 6:30 PM",
+    phone:"+27 21 786 2329", price:"Entry fee applies",
+    website:"https://www.sanparks.org/parks/table_mountain/", wLabel:"sanparks.org",
+    gmaps:"https://maps.google.com/?q=Boulders+Beach+Penguins+Simons+Town"
+  },
+  {
+    id:8, theme:"gold", emoji:"🍾",
+    name:"Furny's Fine Wines & Taste Room", area:"Noordhoek",
+    lat:-34.0982492, lng:18.3634616,
+    tags:["Wine Tasting","Deli","Hidden Gem","Live Music"],
+    desc:"A brilliant little find tucked away in Noordhoek near Chapman's Peak. Set in a charming courtyard, Furny's offers a carefully curated selection of South African wines with knowledgeable, passionate staff. Charcuterie boards are excellent. Live music on Sundays.",
+    tip:"Go for a long walk on Noordhoek Beach afterwards — one of the most beautiful and unspoilt stretches of coastline in the Western Cape.",
+    address:"67 Beach Road, Noordhoek", hours:"Daily 9:00 AM – 10:00 PM",
+    phone:"+27 72 455 0184", price:"££",
+    website:null, wLabel:null,
+    gmaps:"https://maps.google.com/?q=Furny%27s+Fine+Wines+Noordhoek"
+  },
+  {
+    id:9, theme:"teal", emoji:"🏔️",
+    name:"Chapman's Peak Drive", area:"Hout Bay → Noordhoek",
+    lat:-34.0883333, lng:18.3594444,
+    tags:["Scenic Drive","Coastal Cliffs","Sunsets"],
+    desc:"One of the world's truly great coastal drives. The road winds along sheer cliff faces between Hout Bay and Noordhoek, with the Atlantic dropping away beneath you and the mountain rising above. Every corner reveals another extraordinary view — about 9km of pure drama.",
+    tip:"Drive it at sunset heading south towards Noordhoek for the best light. Check road status first — it occasionally closes due to rockfalls.",
+    address:"Chapman's Peak Drive, Hout Bay", hours:"Open daily · Toll approximately R66 per car",
+    phone:"N/A", price:"Toll: ~R66",
+    website:null, wLabel:null,
+    gmaps:"https://maps.google.com/?q=Chapmans+Peak+Drive+Cape+Town"
+  },
+  {
+    id:10, theme:"gold", emoji:"🏖️",
+    name:"Llandudno Beach", area:"Llandudno",
+    lat:-34.0081097, lng:18.3412094,
+    tags:["Beach","Secluded","Sunsets","Swimming"],
+    desc:"One of Cape Town's most beautiful and secluded beaches. Tucked between dramatic granite boulders and the Twelve Apostles mountain range, Llandudno is quiet, clean, and stunning. The Atlantic is cold but crystal clear, and the sunsets here are extraordinary.",
+    tip:"A really nice secluded beach — safe, not too crowded, and genuinely beautiful. Go late afternoon and stay for the sunset.",
+    address:"Llandudno Beach, Llandudno", hours:"Open daily",
+    phone:"N/A", price:"Free",
+    website:null, wLabel:null,
+    gmaps:"https://maps.google.com/?q=Llandudno+Beach+Cape+Town"
+  }
+];
+
+// MAP
+var map = L.map('map', { zoomControl: true, attributionControl: true }).setView([-34.08, 18.41], 11);
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+  subdomains: 'abcd', maxZoom: 19
+}).addTo(map);
+
+map.zoomControl.setPosition('bottomright');
+
+var markerMap = {};
+
+PLACES.forEach(function(p) {
+  var color = p.theme === 'teal' ? '#1A7A6E' : '#B8822E';
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="34" height="42" viewBox="0 0 34 42">'
+    + '<defs><filter id="sh' + p.id + '" x="-40%" y="-40%" width="180%" height="180%">'
+    + '<feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="rgba(0,0,0,0.35)"/>'
+    + '</filter></defs>'
+    + '<path d="M17 0C7.6 0 0 7.6 0 17c0 12.8 17 25 17 25S34 29.8 34 17C34 7.6 26.4 0 17 0z" fill="' + color + '" filter="url(#sh' + p.id + ')"/>'
+    + '<circle cx="17" cy="16" r="8.5" fill="rgba(255,255,255,0.22)"/>'
+    + '<text x="17" y="20.5" font-family="sans-serif" font-weight="700" font-size="11" fill="white" text-anchor="middle">' + p.id + '</text>'
+    + '</svg>';
+
+  var icon = L.divIcon({ className: '', html: svg, iconSize: [34, 42], iconAnchor: [17, 42], popupAnchor: [0, -44] });
+
+  var popup = L.popup({ closeButton: true, maxWidth: 240 })
+    .setContent(
+      '<div class="pop-head" style="background:' + color + '">'
+      + '<div class="pop-name">' + p.emoji + ' ' + p.name + '</div>'
+      + '<div class="pop-area">' + p.area + '</div>'
+      + '</div>'
+      + '<div class="pop-body">' + p.tip + '</div>'
+    );
+
+  var marker = L.marker([p.lat, p.lng], { icon: icon }).addTo(map).bindPopup(popup);
+  marker.on('click', function() { selectCard(p.id, false); });
+  markerMap[p.id] = marker;
+});
+
+// CARDS
+var container = document.getElementById('places');
+var activeId = null;
+
+PLACES.forEach(function(p) {
+  var el = document.createElement('div');
+  el.className = 'card ' + p.theme;
+  el.dataset.id = p.id;
+
+  var webRow = p.website
+    ? '<div class="irow"><span class="iico">🔗</span><a href="' + p.website + '" target="_blank" rel="noopener" class="il">' + p.wLabel + '</a></div>'
+    : '';
+  var webBtn = p.website
+    ? '<a href="' + p.website + '" target="_blank" rel="noopener" class="btn btn-web">🌐 Website</a>'
+    : '';
+
+  el.innerHTML =
+    '<div class="stripe"></div>'
+    + '<div class="ched">'
+    +   '<div class="cnum">' + p.id + '</div>'
+    +   '<div style="flex:1;min-width:0"><div class="cname">' + p.name + '</div><div class="carea">' + p.area + '</div></div>'
+    +   '<div class="cemoji">' + p.emoji + '</div>'
+    + '</div>'
+    + '<div class="cbody">'
+    +   '<div class="ctags">' + p.tags.map(function(t){ return '<span class="tag">' + t + '</span>'; }).join('') + '</div>'
+    +   '<div class="cdesc">' + p.desc + '</div>'
+    +   '<div class="cextra">'
+    +     '<div class="ctip"><div class="ctip-lbl">Oscar\'s Tip</div>' + p.tip + '</div>'
+    +     '<div class="cinfo">'
+    +       '<div class="irow"><span class="iico">📍</span><span>' + p.address + '</span></div>'
+    +       '<div class="irow"><span class="iico">🕐</span><span>' + p.hours + '</span></div>'
+    +       '<div class="irow"><span class="iico">💰</span><span>' + p.price + '</span></div>'
+    +       '<div class="irow"><span class="iico">📞</span><span>' + p.phone + '</span></div>'
+    +       webRow
+    +     '</div>'
+    +     '<div class="cbtns">'
+    +       '<a href="' + p.gmaps + '" target="_blank" rel="noopener" class="btn btn-map">📍 Open in Maps</a>'
+    +       webBtn
+    +     '</div>'
+    +   '</div>'
+    + '</div>';
+
+  el.addEventListener('click', function(e) {
+    if (e.target.closest('a')) return;
+    selectCard(p.id, true);
+  });
+
+  container.appendChild(el);
+});
+
+function selectCard(id, panMap) {
+  var el = document.querySelector('.card[data-id="' + id + '"]');
+  var wasActive = el.classList.contains('active');
+  document.querySelectorAll('.card').forEach(function(c) { c.classList.remove('active'); });
+
+  if (!wasActive) {
+    el.classList.add('active');
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    activeId = id;
+    var p = PLACES.find(function(x) { return x.id === id; });
+    if (panMap) {
+      map.flyTo([p.lat, p.lng], 14, { duration: 1.0 });
+      setTimeout(function() { markerMap[id].openPopup(); }, 950);
+    } else {
+      setTimeout(function() { markerMap[id].openPopup(); }, 100);
+    }
+  } else {
+    activeId = null;
+    map.closePopup();
+    map.flyTo([-34.08, 18.41], 11, { duration: 1.0 });
+  }
+}
+
+}); // end DOMContentLoaded
+</script>
+</body>
+</html>
